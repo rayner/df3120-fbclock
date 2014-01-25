@@ -30,8 +30,9 @@ char *short_month_filenames[] = {
     "dec.png"
 };
 
-void display_time(struct tm *tp);
+void display_time(struct tm *tp, char *fb);
 void display_png(char *filename, int x_pos, int y_pos);
-char *get_framebuffer();
-size_t screen_size_in_bytes();
-void close_framebuffer();
+int open_fb();
+char *get_framebuffer(int fb_descriptor);
+size_t screen_size_in_bytes(int fb_descriptor);
+void close_framebuffer(char *fb, int fb_descriptor);

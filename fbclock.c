@@ -16,23 +16,22 @@
 
 #include "fbclock.h"
 
-/* File descriptor for framebuffer device */
-int fb_descriptor;
-
-/* Framebuffer memory */
-char *fb = NULL;
 
 
 int main(int argc, char *argv[]) {
     time_t t;
     struct tm *tp;
+    int fb_descriptor;
+    char *fb;
 
     /* Display offset from top left of screen, in pixels */
     /* TODO: turn into command-line option */
 /*    int x_offset = 0;
     int y_offset = 0; */
 
-    fb = get_framebuffer();
+    /* Set up framebuffer */
+    fb_descriptor = open_fb();
+    fb = get_framebuffer(fb_descriptor);
 
     while (1) {
         /* Get current time */
@@ -40,16 +39,16 @@ int main(int argc, char *argv[]) {
         tp = localtime(&t);
 
         /* Display it */
-        display_time(tp);
+        display_time(tp, fb);
 
         /* Wait for next update */
         sleep(SLEEP);
     }
 
     /* Clean up */
-    close_framebuffer();
+    close_framebuffer(fb, fb_descriptor);
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 
@@ -57,7 +56,7 @@ int main(int argc, char *argv[]) {
  * tp: pointer to tm struct such as that returned by localtime().
  * fb: pointer to framebuffer memory.
  */
-void display_time(struct tm *tp) {
+void display_time(struct tm *tp, char *fb) {
     int x_pos = 0;
     int y_pos = 0;
 
@@ -101,17 +100,27 @@ void display_png(char *filename, int x_pos, int y_pos) {
 }
 
 
-/* Set up framebuffer for use.
- * Returns: pointer to framebuffer memory.
+/* Open framebuffer device.
+ * Returns: framebuffer file descriptor.
  */
-char *get_framebuffer() {
-    size_t bytes;
-
+int open_fb() {
+    int fb_descriptor;
     fb_descriptor = open("/dev/fb0", O_RDWR);
     if (fb_descriptor == -1) {
         perror("Could not open /dev/fb0");
         exit(EXIT_FAILURE);
     }
+    return fb_descriptor;
+}
+
+
+/* Set up framebuffer for use.
+ * fb_descriptor: file descriptor of framebuffer device, from open_fb().
+ * Returns: pointer to framebuffer memory.
+ */
+char *get_framebuffer(int fb_descriptor) {
+    size_t bytes;
+    char *fb;
 
     bytes = screen_size_in_bytes(fb_descriptor);
 
@@ -130,7 +139,7 @@ char *get_framebuffer() {
 /* Clean up after we're finished with the framebuffer. Unmap memory
  * and close file descriptor.
  */
-void close_framebuffer() {
+void close_framebuffer(char *fb, int fb_descriptor) {
     if (munmap(fb, screen_size_in_bytes(fb_descriptor)) == -1) {
         perror("Failed to munmap framebuffer memory");
         exit(EXIT_FAILURE);
@@ -146,7 +155,7 @@ void close_framebuffer() {
 /* Get the size of the screen in bytes.
  * fb_descriptor: file descriptor of the framebuffer device.
  */
-size_t screen_size_in_bytes() {
+size_t screen_size_in_bytes(int fb_descriptor) {
     size_t bytes;
     struct fb_var_screeninfo var_screeninfo;
 
