@@ -2,8 +2,6 @@
 /* Seconds to sleep between updates */
 #define SLEEP	2
 
-#define FILENAME_MAXLEN 10
-
 char *digit_filenames[] = {
     "0.png",
     "1.png",
@@ -34,4 +32,6 @@ char *short_month_filenames[] = {
 
 void display_time(struct tm *tp);
 void display_png(char *filename, int x_pos, int y_pos);
-
+char *get_framebuffer();
+size_t screen_size_in_bytes();
+void close_framebuffer();
