@@ -109,7 +109,7 @@ char *get_framebuffer() {
 
     fb_descriptor = open("/dev/fb0", O_RDWR);
     if (fb_descriptor == -1) {
-        fprintf(stderr, "Could not open /dev/fb0\n");
+        perror("Could not open /dev/fb0");
         exit(EXIT_FAILURE);
     }
 
@@ -119,7 +119,7 @@ char *get_framebuffer() {
                       fb_descriptor, 0);
 
     if ((int)*fb == -1) {
-        fprintf(stderr, "Failed to mmap /dev/fb0\n");
+        perror("Failed to mmap /dev/fb0");
         exit(EXIT_FAILURE);
     }
 
@@ -131,8 +131,14 @@ char *get_framebuffer() {
  * and close file descriptor.
  */
 void close_framebuffer() {
-    munmap(fb, screen_size_in_bytes(fb_descriptor));
-    close(fb_descriptor);
+    if (munmap(fb, screen_size_in_bytes(fb_descriptor)) == -1) {
+        perror("Failed to munmap framebuffer memory");
+        exit(EXIT_FAILURE);
+    }
+    if (close(fb_descriptor) == -1) {
+        perror("Failed to close framebuffer");
+        exit(EXIT_FAILURE);
+    }
     return;
 }
 
@@ -145,7 +151,7 @@ size_t screen_size_in_bytes() {
     struct fb_var_screeninfo var_screeninfo;
 
     if (ioctl(fb_descriptor, FBIOGET_VSCREENINFO, &var_screeninfo)) {
-        fprintf(stderr, "Unable to get var screen info\n");
+        perror("Unable to get var screen info");
         exit(EXIT_FAILURE);
     }
 
