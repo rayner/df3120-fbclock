@@ -26,8 +26,8 @@ int main(int argc, char *argv[]) {
 
     /* Display offset from top left of screen, in pixels */
     /* TODO: turn into command-line option */
-/*    int x_offset = 0;
-    int y_offset = 0; */
+    int x_offset = 0;
+    int y_offset = 0;
 
     /* Set up framebuffer */
     fb_descriptor = open_fb();
@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
         tp = localtime(&t);
 
         /* Display it */
-        display_time(tp, fb);
+        display_time(tp, fb, x_offset, y_offset);
 
         /* Wait for next update */
         sleep(SLEEP);
@@ -56,9 +56,9 @@ int main(int argc, char *argv[]) {
  * tp: pointer to tm struct such as that returned by localtime().
  * fb: pointer to framebuffer memory.
  */
-void display_time(struct tm *tp, char *fb) {
-    int x_pos = 0;
-    int y_pos = 0;
+void display_time(struct tm *tp, char *fb, int x_offset, int y_offset) {
+    int x_pos = x_offset;
+    int y_pos = y_offset;
 
     int hours = tp->tm_hour;
     int minutes = tp->tm_min;

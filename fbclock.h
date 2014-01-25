@@ -2,6 +2,7 @@
 /* Seconds to sleep between updates */
 #define SLEEP	2
 
+/* Filenames of clock graphics */
 char *digit_filenames[] = {
     "0.png",
     "1.png",
@@ -30,7 +31,8 @@ char *short_month_filenames[] = {
     "dec.png"
 };
 
-void display_time(struct tm *tp, char *fb);
+/* Function prototypes */
+void display_time(struct tm *tp, char *fb, int x_offset, int y_offset);
 void display_png(char *filename, int x_pos, int y_pos);
 int open_fb();
 char *get_framebuffer(int fb_descriptor);
