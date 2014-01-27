@@ -55,6 +55,7 @@ int main(int argc, char *argv[]) {
 /* display_time: Display time on framebuffer.
  * tp: pointer to tm struct such as that returned by localtime().
  * fb: pointer to framebuffer memory.
+ * x_offset, y_offset: x and y position in pixels
  */
 void display_time(struct tm *tp, char *fb, int x_offset, int y_offset) {
     int x_pos = x_offset;
@@ -68,7 +69,7 @@ void display_time(struct tm *tp, char *fb, int x_offset, int y_offset) {
 
     /* TODO: allow user-specified display formats */
     display_png(digit_filenames[mday/10], x_pos, y_pos);
-    display_png(digit_filenames[mday%10], x_pos, y_pos);
+/*    display_png(digit_filenames[mday%10], x_pos, y_pos);
 
     display_png(short_month_filenames[month_num], x_pos, y_pos);
 
@@ -80,7 +81,7 @@ void display_time(struct tm *tp, char *fb, int x_offset, int y_offset) {
     display_png(digit_filenames[hours/10], x_pos, y_pos);
     display_png(digit_filenames[hours%10], x_pos, y_pos);
     display_png(digit_filenames[minutes/10], x_pos, y_pos);
-    display_png(digit_filenames[minutes%10], x_pos, y_pos);
+    display_png(digit_filenames[minutes%10], x_pos, y_pos); */
 
     printf("Time: %s\n", asctime(tp));
     fflush(NULL);
@@ -94,8 +95,47 @@ void display_time(struct tm *tp, char *fb, int x_offset, int y_offset) {
  * x_pos, y_pos: x and y coordinates at which to display it on the framebuffer.
  */
 void display_png(char *filename, int x_pos, int y_pos) {
+    png_byte header[8];
+    FILE *fp;
+    png_structp png_ptr;
+    png_infop info_ptr;
+    int width;
+    int height;
+    png_byte color_type;
+    png_byte bit_depth;
+
     printf("Displaying: %s\n", filename);
     fflush(NULL);
+
+    fp = fopen(filename, "rb");
+    if (!fp) {
+        printf("Failed to open %s\n", filename);
+        /* XXX */
+    }
+
+    fread(header, 1, 8, fp);
+    if (png_sig_cmp(header, 0, 8)) {
+        printf("%s is not a PNG file.\n", filename);
+        /* XXX */
+    }
+
+    png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    info_ptr = png_create_info_struct(png_ptr);
+
+    if (setjmp(png_jmpbuf(png_ptr))) {
+        /* XXX */
+    }
+
+    png_init_io(png_ptr, fp);
+    png_set_sig_bytes(png_ptr, 8);
+
+    width = png_get_image_width(png_ptr, info_ptr);
+    height = png_get_image_height(png_ptr, info_ptr);
+    color_type = png_get_color_type(png_ptr, info_ptr);
+    bit_depth = png_get_bit_depth(png_ptr, info_ptr);
+    printf("%s: x: %d, y: %d, bit depth: %d\n", filename, width, height, color_type);
+
+
     return;
 }
 
@@ -138,6 +178,8 @@ char *get_framebuffer(int fb_descriptor) {
 
 /* Clean up after we're finished with the framebuffer. Unmap memory
  * and close file descriptor.
+ * fb: pointer to memory that was mmap'ed to the framebuffer device.
+ * fb_descriptor: file descriptor for the framebuffer device.
  */
 void close_framebuffer(char *fb, int fb_descriptor) {
     if (munmap(fb, screen_size_in_bytes(fb_descriptor)) == -1) {
@@ -154,6 +196,7 @@ void close_framebuffer(char *fb, int fb_descriptor) {
 
 /* Get the size of the screen in bytes.
  * fb_descriptor: file descriptor of the framebuffer device.
+ * Returns the number of bytes used for the screen.
  */
 size_t screen_size_in_bytes(int fb_descriptor) {
     size_t bytes;
