@@ -4,9 +4,9 @@
 
 /* Filenames of clock graphics */
 char *digit_filenames[] = {
-    "0.png",
-    "1.png",
-    "2.png",
+    "graphics/0.png",
+    "graphics/1.png",
+    "graphics/2.png",
     "3.png",
     "4.png",
     "5.png",
@@ -31,9 +31,16 @@ char *short_month_filenames[] = {
     "dec.png"
 };
 
+/* Data types */
+/* x,y dimensions of an image */
+struct image_size {
+    int x;
+    int y;
+};
+
 /* Function prototypes */
 void display_time(struct tm *tp, char *fb, int x_offset, int y_offset);
-void display_png(char *filename, int x_pos, int y_pos);
+struct image_size display_png(char *filename, char *fb, int x_pos, int y_pos);
 int open_fb();
 char *get_framebuffer(int fb_descriptor);
 size_t screen_size_in_bytes(int fb_descriptor);

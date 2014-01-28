@@ -67,8 +67,12 @@ void display_time(struct tm *tp, char *fb, int x_offset, int y_offset) {
     int month_num = tp->tm_mon;
     int year = tp->tm_year + 1900;
 
+    struct image_size png_size;
+
     /* TODO: allow user-specified display formats */
-    display_png(digit_filenames[mday/10], x_pos, y_pos);
+    png_size = display_png(digit_filenames[mday/10], fb, x_pos, y_pos);
+    x_pos += png_size.x;
+printf("x_pos: %d\n", x_pos);
 /*    display_png(digit_filenames[mday%10], x_pos, y_pos);
 
     display_png(short_month_filenames[month_num], x_pos, y_pos);
@@ -92,17 +96,20 @@ void display_time(struct tm *tp, char *fb, int x_offset, int y_offset) {
 
 /* display_png: display a PNG file at the given location on the framebuffer.
  * filename: name of the file to display.
+ * fb: pointer to framebuffer memory.
  * x_pos, y_pos: x and y coordinates at which to display it on the framebuffer.
  */
-void display_png(char *filename, int x_pos, int y_pos) {
+struct image_size display_png(char *filename, char *fb, int x_pos, int y_pos) {
     png_byte header[8];
     FILE *fp;
     png_structp png_ptr;
     png_infop info_ptr;
-    int width;
-    int height;
     png_byte color_type;
     png_byte bit_depth;
+    struct image_size png_size;
+    int x, y;
+    png_bytepp row_pointers;
+    
 
     printf("Displaying: %s\n", filename);
     fflush(NULL);
@@ -121,22 +128,39 @@ void display_png(char *filename, int x_pos, int y_pos) {
 
     png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
     info_ptr = png_create_info_struct(png_ptr);
+    if (!png_ptr || !info_ptr) {
+        printf("failed to create png structs.\n");
+        /* XXX */
+    }
 
     if (setjmp(png_jmpbuf(png_ptr))) {
+        printf("setjmp_failed.\n");
         /* XXX */
     }
 
     png_init_io(png_ptr, fp);
     png_set_sig_bytes(png_ptr, 8);
+    png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
 
-    width = png_get_image_width(png_ptr, info_ptr);
-    height = png_get_image_height(png_ptr, info_ptr);
+    png_size.x = png_get_image_width(png_ptr, info_ptr);
+    png_size.y = png_get_image_height(png_ptr, info_ptr);
     color_type = png_get_color_type(png_ptr, info_ptr);
     bit_depth = png_get_bit_depth(png_ptr, info_ptr);
-    printf("%s: x: %d, y: %d, bit depth: %d\n", filename, width, height, color_type);
+    printf("%s: x: %d, y: %d, bit depth: %d\n", filename, png_size.x, png_size.y, color_type);
 
+    row_pointers = png_get_rows(png_ptr, info_ptr);
 
-    return;
+    /* Process and display the image data */
+    for (y = 0; y < png_size.y; y++) {
+        png_bytep row = row_pointers[y];
+        for (x = 0; x < png_size.x; x++) {
+            png_bytep pixel = &(row[x*4]);
+            /*printf("Pixel at position [ %d - %d ] has RGBA values: %d - %d - %d - %d\n", x, y, pixel[0], pixel[1], pixel[2], pixel[3]);*/
+            
+        }
+    }
+
+    return png_size;
 }
 
 
