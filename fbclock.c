@@ -171,12 +171,12 @@ struct image_size display_png(char *filename, char *fb, int fb_descriptor, int x
     fb += x_pos * (var_screeninfo.bits_per_pixel / 8);
     fb += y_pos * (var_screeninfo.bits_per_pixel / 8) * var_screeninfo.xres;
     /* Loop through image data and write each pixel to the framebuffer */
-    for (y = 0; y < png_size.y; y++) {
-        png_bytep row = row_pointers[y];
-        for (x = 0; x < png_size.x; x++) {
-            png_bytep png_pixel = &(row[x*4]);
-            /*printf("Pixel at position [ %d - %d ] has RGBA values: %d - %d - %d - %d\n", x, y, png_pixel[0], png_pixel[1], png_pixel[2], png_pixel[3]);*/
-            if (var_screeninfo.bits_per_pixel == 16) {
+    if (var_screeninfo.bits_per_pixel == 16) {
+        for (y = 0; y < png_size.y; y++) {
+            png_bytep row = row_pointers[y];
+            for (x = 0; x < png_size.x; x++) {
+                png_bytep png_pixel = &(row[x*4]);
+                /*printf("Pixel at position [ %d - %d ] has RGBA values: %d - %d - %d - %d\n", x, y, png_pixel[0], png_pixel[1], png_pixel[2], png_pixel[3]);*/
                 /* Convert 8888 RGBA to 565 RGB */
                 png_byte r = png_pixel[0];
                 png_byte g = png_pixel[1];
@@ -200,9 +200,9 @@ struct image_size display_png(char *filename, char *fb, int fb_descriptor, int x
                 *fb = (fb_pixel >> 8);
                 fb++;
             }
+            fb -= png_size.x * (var_screeninfo.bits_per_pixel / 8); /* Move back to starting X coordinate */
+            fb += (var_screeninfo.bits_per_pixel / 8) * var_screeninfo.xres; /* Move down to the next row of pixels */
         }
-        fb -= png_size.x * (var_screeninfo.bits_per_pixel / 8); /* Move back to starting X coordinate */
-        fb += (var_screeninfo.bits_per_pixel / 8) * var_screeninfo.xres; /* Move down to the next row of pixels */
     }
 
     return png_size;
