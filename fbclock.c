@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
+#include <stdint.h>
 #include <png.h>
 #include <linux/fb.h>
 #include <sys/ioctl.h>
@@ -39,7 +40,7 @@ int main(int argc, char *argv[]) {
         tp = localtime(&t);
 
         /* Display it */
-        display_time(tp, fb, x_offset, y_offset);
+        display_time(tp, fb, fb_descriptor, x_offset, y_offset);
 
         /* Wait for next update */
         sleep(SLEEP);
@@ -57,7 +58,7 @@ int main(int argc, char *argv[]) {
  * fb: pointer to framebuffer memory.
  * x_offset, y_offset: x and y position in pixels
  */
-void display_time(struct tm *tp, char *fb, int x_offset, int y_offset) {
+void display_time(struct tm *tp, char *fb, int fb_descriptor, int x_offset, int y_offset) {
     int x_pos = x_offset;
     int y_pos = y_offset;
 
@@ -70,22 +71,30 @@ void display_time(struct tm *tp, char *fb, int x_offset, int y_offset) {
     struct image_size png_size;
 
     /* TODO: allow user-specified display formats */
-    png_size = display_png(digit_filenames[mday/10], fb, x_pos, y_pos);
+    png_size = display_png(digit_filenames[mday/10], fb, fb_descriptor, x_pos, y_pos);
     x_pos += png_size.x;
-printf("x_pos: %d\n", x_pos);
-/*    display_png(digit_filenames[mday%10], x_pos, y_pos);
+    png_size = display_png(digit_filenames[mday%10], fb, fb_descriptor, x_pos, y_pos);
+    x_pos += png_size.x;
 
-    display_png(short_month_filenames[month_num], x_pos, y_pos);
+    png_size = display_png(short_month_filenames[month_num], fb, fb_descriptor, x_pos, y_pos);
+    x_pos += png_size.x;
 
-    display_png(digit_filenames[year/1000], x_pos, y_pos);
-    display_png(digit_filenames[(year%1000)/100], x_pos, y_pos);
-    display_png(digit_filenames[(year%100)/10], x_pos, y_pos);
-    display_png(digit_filenames[year%10], x_pos, y_pos);
+    png_size = display_png(digit_filenames[year/1000], fb, fb_descriptor, x_pos, y_pos);
+    x_pos += png_size.x;
+    png_size = display_png(digit_filenames[(year%1000)/100], fb, fb_descriptor, x_pos, y_pos);
+    x_pos += png_size.x;
+    png_size = display_png(digit_filenames[(year%100)/10], fb, fb_descriptor, x_pos, y_pos);
+    x_pos += png_size.x;
+    png_size = display_png(digit_filenames[year%10], fb, fb_descriptor, x_pos, y_pos);
+    x_pos += png_size.x;
 
-    display_png(digit_filenames[hours/10], x_pos, y_pos);
-    display_png(digit_filenames[hours%10], x_pos, y_pos);
-    display_png(digit_filenames[minutes/10], x_pos, y_pos);
-    display_png(digit_filenames[minutes%10], x_pos, y_pos); */
+    png_size = display_png(digit_filenames[hours/10], fb, fb_descriptor, x_pos, y_pos);
+    x_pos += png_size.x;
+    png_size = display_png(digit_filenames[hours%10], fb, fb_descriptor, x_pos, y_pos);
+    x_pos += png_size.x;
+    png_size = display_png(digit_filenames[minutes/10], fb, fb_descriptor, x_pos, y_pos);
+    x_pos += png_size.x;
+    png_size = display_png(digit_filenames[minutes%10], fb, fb_descriptor, x_pos, y_pos);
 
     printf("Time: %s\n", asctime(tp));
     fflush(NULL);
@@ -99,7 +108,7 @@ printf("x_pos: %d\n", x_pos);
  * fb: pointer to framebuffer memory.
  * x_pos, y_pos: x and y coordinates at which to display it on the framebuffer.
  */
-struct image_size display_png(char *filename, char *fb, int x_pos, int y_pos) {
+struct image_size display_png(char *filename, char *fb, int fb_descriptor, int x_pos, int y_pos) {
     png_byte header[8];
     FILE *fp;
     png_structp png_ptr;
@@ -109,6 +118,7 @@ struct image_size display_png(char *filename, char *fb, int x_pos, int y_pos) {
     struct image_size png_size;
     int x, y;
     png_bytepp row_pointers;
+    struct fb_var_screeninfo var_screeninfo;
     
 
     printf("Displaying: %s\n", filename);
@@ -146,18 +156,53 @@ struct image_size display_png(char *filename, char *fb, int x_pos, int y_pos) {
     png_size.y = png_get_image_height(png_ptr, info_ptr);
     color_type = png_get_color_type(png_ptr, info_ptr);
     bit_depth = png_get_bit_depth(png_ptr, info_ptr);
-    printf("%s: x: %d, y: %d, bit depth: %d\n", filename, png_size.x, png_size.y, color_type);
+    printf("%s: x: %d, y: %d, color type: %d, bit depth: %d\n", filename, png_size.x, png_size.y, color_type, bit_depth);
 
     row_pointers = png_get_rows(png_ptr, info_ptr);
 
-    /* Process and display the image data */
+    if (ioctl(fb_descriptor, FBIOGET_VSCREENINFO, &var_screeninfo)) {
+        perror("Unable to get var screen info");
+        exit(EXIT_FAILURE);
+    }
+
+    /******** Process and display the image data ********/
+    /* XXX TODO: support fb colour depths other than 16-bit */
+    /* Move to correct X/Y starting position */
+    fb += x_pos * (var_screeninfo.bits_per_pixel / 8);
+    fb += y_pos * (var_screeninfo.bits_per_pixel / 8) * var_screeninfo.xres;
+    /* Loop through image data and write each pixel to the framebuffer */
     for (y = 0; y < png_size.y; y++) {
         png_bytep row = row_pointers[y];
         for (x = 0; x < png_size.x; x++) {
-            png_bytep pixel = &(row[x*4]);
-            /*printf("Pixel at position [ %d - %d ] has RGBA values: %d - %d - %d - %d\n", x, y, pixel[0], pixel[1], pixel[2], pixel[3]);*/
-            
+            png_bytep png_pixel = &(row[x*4]);
+            /*printf("Pixel at position [ %d - %d ] has RGBA values: %d - %d - %d - %d\n", x, y, png_pixel[0], png_pixel[1], png_pixel[2], png_pixel[3]);*/
+            if (var_screeninfo.bits_per_pixel == 16) {
+                /* Convert 8888 RGBA to 565 RGB */
+                png_byte r = png_pixel[0];
+                png_byte g = png_pixel[1];
+                png_byte b = png_pixel[2];
+                uint16_t fb_pixel = 0;
+
+                r = r >> 3;
+                g = g >> 2;
+                b = b >> 3;
+
+                fb_pixel = fb_pixel | r;
+                fb_pixel = fb_pixel << 6;
+                fb_pixel = fb_pixel | g;
+                fb_pixel = fb_pixel << 5;
+                fb_pixel = fb_pixel | b;
+
+                /* Write pixel to framebuffer */
+                /* XXX */
+                *fb = fb_pixel;
+                fb++;
+                *fb = (fb_pixel >> 8);
+                fb++;
+            }
         }
+        fb -= png_size.x * (var_screeninfo.bits_per_pixel / 8); /* Move back to starting X coordinate */
+        fb += (var_screeninfo.bits_per_pixel / 8) * var_screeninfo.xres; /* Move down to the next row of pixels */
     }
 
     return png_size;
