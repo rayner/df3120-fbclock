@@ -31,17 +31,6 @@ char *short_month_filenames[] = {
     "graphics/dec.png"
 };
 
-/* Data types */
-/* x,y dimensions of an image */
-struct image_size {
-    int x;
-    int y;
-};
 
 /* Function prototypes */
-void display_time(struct tm *tp, char *fb, int fb_descriptor, int x_offset, int y_offset);
-struct image_size display_png(char *filename, char *fb, int fb_descriptor, int x_pos, int y_pos);
-int open_fb();
-char *get_framebuffer(int fb_descriptor);
-size_t screen_size_in_bytes(int fb_descriptor);
-void close_framebuffer(char *fb, int fb_descriptor);
+void display_time(struct tm *tp, struct framebuffer *fb, int x_offset, int y_offset);
