@@ -5,15 +5,10 @@
  */
 
 #include <stdio.h>
-#include <fcntl.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <time.h>
-#include <stdint.h>
-#include <png.h>
+#include <unistd.h>
 #include <linux/fb.h>
-#include <sys/ioctl.h>
-#include <sys/mman.h>
 
 #include "framebuffer.h"
 #include "fbclock.h"

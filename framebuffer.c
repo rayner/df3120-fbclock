@@ -94,15 +94,11 @@ struct image_size display_png(struct framebuffer *fb, char *filename, int x_pos,
     FILE *fp;
     png_structp png_ptr;
     png_infop info_ptr;
-    png_byte color_type;
-    png_byte bit_depth;
+    png_bytepp row_pointers;
+
     struct image_size png_size;
     int x, y;
     char *mem_ptr;
-    png_bytepp row_pointers;
-
-    printf("Displaying: %s\n", filename);
-    fflush(NULL);
 
     fp = fopen(filename, "rb");
     if (!fp) {
@@ -134,9 +130,6 @@ struct image_size display_png(struct framebuffer *fb, char *filename, int x_pos,
 
     png_size.x = png_get_image_width(png_ptr, info_ptr);
     png_size.y = png_get_image_height(png_ptr, info_ptr);
-    color_type = png_get_color_type(png_ptr, info_ptr);
-    bit_depth = png_get_bit_depth(png_ptr, info_ptr);
-    printf("%s: x: %d, y: %d, color type: %d, bit depth: %d\n", filename, png_size.x, png_size.y, color_type, bit_depth);
 
     row_pointers = png_get_rows(png_ptr, info_ptr);
 
@@ -151,9 +144,8 @@ struct image_size display_png(struct framebuffer *fb, char *filename, int x_pos,
         for (y = 0; y < png_size.y; y++) {
             png_bytep row = row_pointers[y];
             for (x = 0; x < png_size.x; x++) {
-                png_bytep png_pixel = &(row[x*4]);
-                /*printf("Pixel at position [ %d - %d ] has RGBA values: %d - %d - %d - %d\n", x, y, png_pixel[0], png_pixel[1], png_pixel[2], png_pixel[3]);*/
                 /* Convert 8888 RGBA to 565 RGB */
+                png_bytep png_pixel = &(row[x*4]);
                 png_byte r = png_pixel[0];
                 png_byte g = png_pixel[1];
                 png_byte b = png_pixel[2];
@@ -170,7 +162,6 @@ struct image_size display_png(struct framebuffer *fb, char *filename, int x_pos,
                 fb_pixel = fb_pixel | b;
 
                 /* Write pixel to framebuffer */
-                /* XXX */
                 *mem_ptr = fb_pixel;
                 mem_ptr++;
                 *mem_ptr = (fb_pixel >> 8);
