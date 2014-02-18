@@ -15,9 +15,12 @@
 /* Open framebuffer device and mmap it to memory.
  * fb: pointer to framebuffer struct.
  * filename: name of framebuffer device.
+ *
+ * If successful, sets fb->descriptor and fb->mem_start.
  */
 void new_framebuffer(struct framebuffer *fb, char *filename) {
     size_t bytes;
+    void *mem_ptr;
 
     fb->descriptor = open(filename, O_RDWR);
     if (fb->descriptor == -1) {
@@ -33,12 +36,17 @@ void new_framebuffer(struct framebuffer *fb, char *filename) {
 
     bytes = screen_size_in_bytes(fb);
 
-    fb->mem_start = (char *)mmap(NULL, bytes, PROT_READ|PROT_WRITE, MAP_SHARED,
-                                 fb->descriptor, 0);
 
-    if ((int)*fb->mem_start == -1) {
+    mem_ptr = mmap(NULL, bytes, PROT_READ|PROT_WRITE, MAP_SHARED, 
+                   fb->descriptor, 0);
+
+
+    if (mem_ptr == MAP_FAILED) {
         perror("Failed to mmap framebuffer device to memory");
         exit(EXIT_FAILURE);
+    }
+    else {
+        fb->mem_start = (unsigned char *)mem_ptr;
     }
 
     return;
@@ -98,7 +106,7 @@ struct image_size display_png(struct framebuffer *fb, char *filename, int x_pos,
 
     struct image_size png_size;
     int x, y;
-    char *mem_ptr;
+    unsigned char *mem_ptr;
 
     fp = fopen(filename, "rb");
     if (!fp) {

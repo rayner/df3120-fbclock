@@ -3,7 +3,7 @@
 /* Struct of framebuffer attributes */
 struct framebuffer {
     int descriptor; /* File descriptor for framebuffer device */
-    char *mem_start; /* Pointer to start of framebuffer memory */
+    unsigned char *mem_start; /* Pointer to start of framebuffer memory */
     struct fb_var_screeninfo screeninfo; /* Pointer to struct of screen info */
 };
 
