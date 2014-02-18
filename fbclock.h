@@ -33,4 +33,5 @@ char *short_month_filenames[] = {
 
 
 /* Function prototypes */
-void display_time(struct tm *tp, struct framebuffer *fb, int x_offset, int y_offset);
+void display_time(struct tm *tp, struct framebuffer *fb, int x_offset, 
+                  int y_offset);

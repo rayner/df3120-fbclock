@@ -36,10 +36,8 @@ void new_framebuffer(struct framebuffer *fb, char *filename) {
 
     bytes = screen_size_in_bytes(fb);
 
-
     mem_ptr = mmap(NULL, bytes, PROT_READ|PROT_WRITE, MAP_SHARED, 
                    fb->descriptor, 0);
-
 
     if (mem_ptr == MAP_FAILED) {
         perror("Failed to mmap framebuffer device to memory");
@@ -97,7 +95,8 @@ size_t screen_size_in_bytes(struct framebuffer *fb) {
  * filename: name of the file to display.
  * x_pos, y_pos: x and y coordinates at which to display it on the framebuffer.
  */
-struct image_size display_png(struct framebuffer *fb, char *filename, int x_pos, int y_pos) {
+struct image_size display_png(struct framebuffer *fb, char *filename, 
+                              int x_pos, int y_pos) {
     png_byte header[8];
     FILE *fp;
     png_structp png_ptr;
@@ -145,8 +144,8 @@ struct image_size display_png(struct framebuffer *fb, char *filename, int x_pos,
     /* XXX TODO: support fb colour depths other than 16-bit */
     /* Move to correct X/Y starting position */
     mem_ptr = fb->mem_start;
-    mem_ptr += x_pos * (fb->screeninfo.bits_per_pixel / 8);
-    mem_ptr += y_pos * (fb->screeninfo.bits_per_pixel / 8) * fb->screeninfo.xres;
+    mem_ptr += x_pos * (fb->screeninfo.bits_per_pixel/8);
+    mem_ptr += y_pos * (fb->screeninfo.bits_per_pixel/8) * fb->screeninfo.xres;
     /* Loop through image data and write each pixel to the framebuffer */
     if (fb->screeninfo.bits_per_pixel == 16) {
         for (y = 0; y < png_size.y; y++) {
@@ -175,8 +174,10 @@ struct image_size display_png(struct framebuffer *fb, char *filename, int x_pos,
                 *mem_ptr = (fb_pixel >> 8);
                 mem_ptr++;
             }
-            mem_ptr -= png_size.x * (fb->screeninfo.bits_per_pixel / 8); /* Move back to starting X coordinate */
-            mem_ptr += (fb->screeninfo.bits_per_pixel / 8) * fb->screeninfo.xres; /* Move down to the next row of pixels */
+            /* Move back to starting X coordinate */
+            mem_ptr -= png_size.x * (fb->screeninfo.bits_per_pixel/8);
+            /* Move down to the next row of pixels */
+            mem_ptr += (fb->screeninfo.bits_per_pixel/8) * fb->screeninfo.xres;
         }
     }
     return png_size;

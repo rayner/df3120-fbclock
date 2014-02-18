@@ -52,7 +52,8 @@ int main(int argc, char *argv[]) {
  * fb: pointer to framebuffer memory.
  * x_offset, y_offset: x and y position in pixels
  */
-void display_time(struct tm *tp, struct framebuffer *fb, int x_offset, int y_offset) {
+void display_time(struct tm *tp, struct framebuffer *fb, int x_offset, 
+                  int y_offset) {
     int x_pos = x_offset;
     int y_pos = y_offset;
 
@@ -90,6 +91,7 @@ void display_time(struct tm *tp, struct framebuffer *fb, int x_offset, int y_off
     x_pos += png_size.x;
     png_size = display_png(fb, digit_filenames[minutes%10], x_pos, y_pos);
 
+    /* XXX debug output */
     printf("Time: %s\n", asctime(tp));
     fflush(NULL);
 
