@@ -4,6 +4,7 @@
  * Requires: libpng
  */
 
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -21,9 +22,24 @@ int main(int argc, char *argv[]) {
     struct framebuffer fb;
 
     /* Display offset from top left of screen, in pixels */
-    /* TODO: turn into command-line option */
-    int x_offset = 0;
-    int y_offset = 0;
+    unsigned int x_offset = 0;
+    unsigned int y_offset = 0;
+
+    /* Parse command-line options */
+    int opt;
+    while ((opt = getopt(argc, argv, "x:y:")) != -1) {
+        switch (opt) {
+        case 'x':
+            x_offset = atoi(optarg);
+            break;
+        case 'y':
+            y_offset = atoi(optarg);
+            break;
+        default:
+            print_usage(argv[0]);
+            exit(EXIT_FAILURE);
+        }
+    }
 
     /* Set up framebuffer */
     new_framebuffer(&fb, "/dev/fb0");
@@ -95,6 +111,13 @@ void display_time(struct tm *tp, struct framebuffer *fb, int x_offset,
     printf("Time: %s\n", asctime(tp));
     fflush(NULL);
 
+    return;
+}
+
+
+/* print_usage: print a usage message */
+void print_usage(char *name) {
+    fprintf(stderr, "Usage: %s [-x x_offset] [-y y_offset]\n", name);
     return;
 }
 
