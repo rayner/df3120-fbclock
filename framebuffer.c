@@ -109,26 +109,26 @@ struct image_size display_png(struct framebuffer *fb, char *filename,
 
     fp = fopen(filename, "rb");
     if (!fp) {
-        printf("Failed to open %s\n", filename);
-        /* XXX */
+        perror("Failed to open file");
+        exit(EXIT_FAILURE);
     }
 
     fread(header, 1, 8, fp);
     if (png_sig_cmp(header, 0, 8)) {
-        printf("%s is not a PNG file.\n", filename);
-        /* XXX */
+        fprintf(stderr, "%s is not a valid PNG file.\n", filename);
+        exit(EXIT_FAILURE);
     }
 
     png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
     info_ptr = png_create_info_struct(png_ptr);
     if (!png_ptr || !info_ptr) {
-        printf("failed to create png structs.\n");
-        /* XXX */
+        perror("Failed to create PNG data structures");
+        exit(EXIT_FAILURE);
     }
 
     if (setjmp(png_jmpbuf(png_ptr))) {
-        printf("setjmp_failed.\n");
-        /* XXX */
+        perror("setjmp failed");
+        exit(EXIT_FAILURE);
     }
 
     png_init_io(png_ptr, fp);
@@ -142,6 +142,7 @@ struct image_size display_png(struct framebuffer *fb, char *filename,
 
     /******** Process and display the image data ********/
     /* XXX TODO: support fb colour depths other than 16-bit */
+
     /* Move to correct X/Y starting position */
     mem_ptr = fb->mem_start;
     mem_ptr += x_pos * (fb->screeninfo.bits_per_pixel/8);
