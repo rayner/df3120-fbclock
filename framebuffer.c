@@ -7,6 +7,7 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <linux/fb.h>
+#include <string.h>
 
 #include "pngimage.h"
 #include "framebuffer.h"
@@ -141,14 +142,14 @@ struct image_size display_png(struct framebuffer *fb, char *filename,
     row_pointers = png_get_rows(png_ptr, info_ptr);
 
     /******** Process and display the image data ********/
-    /* XXX TODO: support fb colour depths other than 16-bit */
 
     /* Move to correct X/Y starting position */
     mem_ptr = fb->mem_start;
     mem_ptr += x_pos * (fb->screeninfo.bits_per_pixel/8);
     mem_ptr += y_pos * (fb->screeninfo.bits_per_pixel/8) * fb->screeninfo.xres;
     /* Loop through image data and write each pixel to the framebuffer */
-    if (fb->screeninfo.bits_per_pixel == 16) {
+    switch (fb->screeninfo.bits_per_pixel) {
+    case 16:
         for (y = 0; y < png_size.y; y++) {
             png_bytep row = row_pointers[y];
             for (x = 0; x < png_size.x; x++) {
@@ -180,6 +181,17 @@ struct image_size display_png(struct framebuffer *fb, char *filename,
             /* Move down to the next row of pixels */
             mem_ptr += (fb->screeninfo.bits_per_pixel/8) * fb->screeninfo.xres;
         }
+        break;
+    case 32:
+        for (y = 0; y < png_size.y; y++) {
+            memcpy(mem_ptr, row_pointers[y], png_size.x * 4);
+            /* Move down to the next row of pixels */
+            mem_ptr += (fb->screeninfo.bits_per_pixel/8) * fb->screeninfo.xres;
+        }
+        break;
+    default:
+        fprintf(stderr, "Unsupported pixel size: %d bits!\n", fb->screeninfo.bits_per_pixel);
+        break;
     }
     return png_size;
 }
